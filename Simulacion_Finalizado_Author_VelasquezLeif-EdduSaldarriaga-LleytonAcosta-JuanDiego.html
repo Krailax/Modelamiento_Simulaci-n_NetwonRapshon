@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+</head>
+<body style="background-color: rgba(0, 0, 0, .1);">
+    <!-- AUTHOR : VELASQUEZ REALPE LEIF WITHER y Juan Diego-->
+    <!--||||||||||||||||||||||||||||||||||||||||||||||||||||||-->
+    <style>
+      img {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: auto;}
+    </style>
+    <!--NO TOCAR-->
+    <!--Configuración de Python-->
+    <py-config>packages = ["matplotlib", "pandas","sympy"]</py-config>
+    <!--Proceso de python-->
+    <py-script>
+        #--Librerías--
+        from pyodide.ffi import create_proxy
+        from sympy import sqrt, evalf, diff, integrate, symbols, sympify
+        from pandas import DataFrame as pd
+        import matplotlib.pyplot as plt
+        #--Función--
+        def Calcular(event):
+            x_valor= js.document.getElementById("Dato_X").value;
+            f_str= js.document.getElementById("Dato_F").value;
+            error2= js.document.getElementById("Dato_E").value;
+            x_valor= int(x_valor);
+            error2= float(error2);
+            #Variables
+            x= symbols("x");
+            tabla_resultados= [];
+            n=0;
+            error= 100;
+            #Variables Transforamada
+            f= sympify(f_str);
+            df= diff(f);
+            #Grafico
+            x_vals = [float(i) for i in range(1, 100)]
+            y_vals = [float(f.subs(x, i)) for i in x_vals]
+            #Variable Evaluada
+            f_evaluado= f.subs(x, x_valor).evalf()
+            df_evaluado= df.subs(x, x_valor).evalf()
+            f_evaluado = round(f_evaluado,6)
+            df_evaluado= round(df_evaluado,6)
+            #Proceso
+            if(0 == f.subs(x,x_valor).evalf()):
+                print("El valor de x no es valido")
+            else:
+                tabla_resultados.append([str(n), str(x_valor), str(f_evaluado), str(df_evaluado), " --- "])
+                while(error>error2):
+                    resultado_anterior = x_valor
+                    x_valor = x_valor - (f_evaluado/df_evaluado)
+                    x_valor = round(x_valor,6)
+                    error= abs(((x_valor-resultado_anterior)/x_valor)*100)
+                    error= round(error,2)
+                    f_evaluado= f.subs(x, x_valor).evalf()
+                    df_evaluado= df.subs(x, x_valor).evalf()
+                    f_evaluado = round(f_evaluado,6)
+                    df_evaluado= round(df_evaluado,6)
+                    n = n+1
+                    tabla_resultados.append([n,x_valor,f_evaluado,df_evaluado,error])
+                    if(df_evaluado==0 or f_evaluado==0 ):
+                        error=0
+                #Añadimos los datos a la tabla
+                tabla = pd(tabla_resultados, columns=["n", "x(n+1)", "f(n)", "df(n)", "error"])
+                tabla_html = js.document.getElementById("tabla_x")
+                for indice, fila in tabla.iterrows():
+                    nueva_fila = tabla_html.insertRow()
+                    nueva_fila.insertCell().innerHTML = str(fila['n'])
+                    nueva_fila.insertCell().innerHTML = str(fila['x(n+1)'])
+                    nueva_fila.insertCell().innerHTML = str(fila['f(n)'])
+                    nueva_fila.insertCell().innerHTML = str(fila['df(n)'])
+                    nueva_fila.insertCell().innerHTML = str(fila['error'])              
+                # Generar gráfico
+                #plt.scatter(x_valor, f_evaluado, color='red')
+                fig = plt.figure()
+                plt.grid(True)
+                plt.axvline(x=0, color='black')
+                plt.axhline(y=0, color='black')
+                plt.scatter(x=x_valor, y=0, color='r', s=40)
+                plt.plot(x_vals, y_vals)
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.rcParams["figure.figsize"] = (22,20)
+                plt.show()
+                display(plt.gcf(), target="graph-area", append=False)
+                #Calculo(1,"(exp(-x)) - (log(x)) + 3",3)
+        #--Conexiones
+        buttonCalcular= js.document.getElementById("Button_Calcular")
+        proxiImprimir = create_proxy(Calcular)
+        buttonCalcular.addEventListener("click", proxiImprimir)
+    </py-script>
+    <!--NO TOCAR-->
+    <!--Fin del proceso de python-->
+    <!--||||||||||||||||||||||||||||||||||||||||||||||||||||||-->
+    <!--Comienzo de HTML-->
+    <!--Authoy:Eddu Ariel Saldarriaga Carrillo y LLeyton Acosta-->
+    <!--Diseña bien la cosa haz un div un espacio para el grafico , diseña la tabla (dejarle definido el estilo) y no cambie ningun id de lo inputs-->
+    <main style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <br>
+        <br>
+        <div class="col-12 col-sm-10 col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h1 style="text-align: center;">Titulo</h1>
+                </div>
+                <br>
+                <div class="card-body">
+                    <label for="" class="form-label">Valor de x</label>
+                    <input class="form-control" type=text id="Dato_X">
+                    <label for="" class="form-label">Función</label>
+                    <input class="form-control" type=text id="Dato_F">
+                    <label for="" class="form-label">Error %</label>
+                    <input class="form-control" type=text id="Dato_E">
+                    <br>
+                    <button id="Button_Calcular" class="btn btn-primary">Presionar aqui</button>
+                </div>
+            </div>
+        </div>
+        <br>
+        <br>
+        <div class="col-12 col-sm-10 col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h1 style="text-align: center;">Gráfico</h1>
+                </div>
+                <br>
+                <div class="card-body" id="graph-area" center>
+                    <!--Aqui va grafico-->
+                </div>
+            </div>
+        </div>
+        <br>
+        <br>
+        <div class="col-12  col-sm-10 col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h1 style="text-align: center;">Tabla de datos</h1>
+                </div>
+                <br>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="thead-primary">
+                                <tr>
+                                    <th scope="col">n</th>
+                                    <th scope="col">x(n+1)</th>
+                                    <th scope="col">f(n)</th>
+                                    <th scope="col">df(n)</th>
+                                    <th scope="col">error</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_x"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+        <br>
+    </main>
+    <!--Fin del Html-->
+    <!--||||||||||||||||||||||||||||||||||||||||||||||||||||||-->
+</body>
+</html>
